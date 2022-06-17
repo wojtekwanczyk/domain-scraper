@@ -1,5 +1,8 @@
+#!/usr/bin/env python3
+
 import click
 import os
+import shutil
 
 from email.parser import BytesHeaderParser
 from email.policy import default
@@ -10,9 +13,13 @@ from scraper import DomainScraper
 
 # TODO could be moved to separate config file
 INPUT_DIR = 'input'
+ARCHIVE_DIR = 'archive'
 DB_FILE = 'email_database.json'
 
-def read_emails_from_dir(input_dir):
+def read_emails_from_dir(input_dir, archive_dir):
+    if not os.path.isdir(archive_dir):
+        os.mkdir(archive_dir)
+
     emails = []
     parser = BytesHeaderParser(policy=default)
     for email_filename in os.listdir(input_dir):
@@ -20,6 +27,7 @@ def read_emails_from_dir(input_dir):
         # throws FileNotFoundError on non-existent dir
         with open(email_path, 'rb') as ef:
             emails.append(parser.parse(ef))
+        shutil.move(email_path, archive_dir) # move parsed emails to archive
     return emails
 
 
@@ -29,10 +37,11 @@ def cli():
 
 @cli.command()
 @click.option('-i', '--input-dir', default=INPUT_DIR, help='Input directory to read emails')
+@click.option('-a', '--archive-dir', default=ARCHIVE_DIR, help='Archive directory to move emails')
 @click.option('-f', '--dbfile', default=DB_FILE, help='File to save scraped domains')
-def scrape_domains(input_dir, dbfile):
+def scrape_domains(input_dir, archive_dir, dbfile):
     """Scrape domains from emails from input_dir and print them"""
-    emails = read_emails_from_dir(input_dir)
+    emails = read_emails_from_dir(input_dir, archive_dir)
     scraper = DomainScraper()
     scraper.scrape_from_emails(emails)
     scraper.save(dbfile)
@@ -44,6 +53,14 @@ def send_summary(dbfile):
     # TODO add option to send all domains, not only gatehered since last email
     mailer = DomainMailer(DB_FILE)
     mailer.send_email()
+
+@cli.command()
+def clean():
+    """For testing purposes: remove DB_FILE, rename ARCHIVE_DIR to INPUT_DIR"""
+    if os.path.isdir(ARCHIVE_DIR):
+        os.rename(ARCHIVE_DIR, INPUT_DIR)
+    if os.path.isfile(DB_FILE):
+        os.unlink(DB_FILE)
 
 if __name__ == '__main__':
     cli()

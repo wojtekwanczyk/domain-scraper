@@ -34,7 +34,10 @@ class DomainScraper:
                 dbfile_dict = json.load(f)
         except FileNotFoundError:
             dbfile_dict = defaultdict(dict)
-        dbfile_dict['domains'] = self.domains
-        pprint(dbfile_dict)
-        with open(dbfile, 'w') as f:
-            json.dump(dbfile_dict, f, indent=2)
+        if self.domains:
+            dbfile_dict['domains'].update(self.domains)
+            pprint(self.domains)
+            with open(dbfile, 'w') as f:
+                json.dump(dbfile_dict, f, indent=2)
+        else:
+            print("No new emails parsed, please check INPUT_DIR")
