@@ -1,10 +1,15 @@
 import click
+import json
 import os
 import re
+
+from collections import defaultdict
 from email.parser import BytesHeaderParser
 from email.policy import default
+from pprint import pprint
 
 INPUT_DIR = 'input'
+DB_FILE = 'email_database.json'
 
 
 def read_emails_from_dir(input_dir):
@@ -23,22 +28,34 @@ class DomainScraper:
         separators = 'from|by|via|with|id|for|;'
         self.from_regex = re.compile(f'from\s+(.+?)\s+({separators})')
         self.by_regex = re.compile(f'by\s+(.+?)\s+({separators})')
-
-    def get_domains_for_email(self, email):
-        domains = set()
-        received_headers = email.get_all('Received')
-        for received in received_headers:
-            if domain := self.from_regex.search(received):
-                domains.add(domain.group(1))
-            if domain := self.by_regex.search(received):
-                domains.add(domain.group(1))
-        return domains
+        self.domains = dict()
 
     def scrape_from_emails(self, emails):
-        domains = set()
         for email in emails:
-            domains.update(self.get_domains_for_email(email))
-        return domains
+            email_domains = self.get_domains_for_email(email)
+            self.domains.update(email_domains)
+
+    def get_domains_for_email(self, email):
+        received_headers = email.get_all('Received')
+        email_domains = set()
+        for received in received_headers:
+            if domain := self.from_regex.search(received):
+                email_domains.add(domain.group(1))
+            if domain := self.by_regex.search(received):
+                email_domains.add(domain.group(1))
+        message_id = email['Message-ID'].strip('\t<>')
+        return {message_id: list(email_domains)}
+    
+    def save(self, dbfile):
+        try:
+            with open(dbfile, 'r') as f:
+                dbfile_dict = json.load(f)
+        except FileNotFoundError:
+            dbfile_dict = defaultdict(dict)
+        dbfile_dict['domains'] = self.domains
+        pprint(dbfile_dict)
+        with open(dbfile, 'w') as f:
+            json.dump(dbfile_dict, f, indent=2)
 
 
 @click.group()
@@ -47,13 +64,17 @@ def cli():
 
 @cli.command()
 @click.option('-i', '--input-dir', default=INPUT_DIR, help='Input directory to read emails')
-def scrape_domains(input_dir):
+@click.option('-f', '--dbfile', default=DB_FILE, help='File to save scraped domains')
+def scrape_domains(input_dir, dbfile):
     """Scrape domains from emails from input_dir and print them"""
     emails = read_emails_from_dir(input_dir)
-    print(DomainScraper().scrape_from_emails(emails))
+    scraper = DomainScraper()
+    scraper.scrape_from_emails(emails)
+    scraper.save(dbfile)
 
 @cli.command()
-def send_summary():
+@click.option('-f', '--dbfile', default=DB_FILE, help='File with scraped domains')
+def send_summary(dbfile):
     """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
     pass
 
