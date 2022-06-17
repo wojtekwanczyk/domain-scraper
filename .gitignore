@@ -1,3 +1,4 @@
 input
 notes.txt
 email_database.json
+__pycache__/
