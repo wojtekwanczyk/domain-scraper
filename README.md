@@ -16,8 +16,9 @@ Commands:
   send-summary    Read domains from file and send email with update to DOMAIN_SUBSCRIBERS
 
 ## TODO:
- - [ ] add setup.py, entrypoint and test building
+ - [x] move scanned emails to separate dir to avoid duplication
  - [ ] add html alternative message template + use it
+ - [ ] add setup.py, entrypoint and test building
  - [ ] create separate config file (INPUT_DIR, DB_FILE, DOMAINS_SUBSCRIBERS)
  - [ ] add logging and remove all prints
  - [ ] add option for send-summary to send all emails instead of only new emails
