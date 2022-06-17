@@ -1,0 +1,39 @@
+<p>Hello, this is your daily update from Domain Scraper!</p>
+<p>Emails (Message-ID) checked since last summary and domains scraped from them are listed hereunder.</p>
+
+<table border="1">
+    <tr>
+    <td valign="top">
+        <table>
+            <thead>
+                <th>
+                    <tr><b> Message-ID </b></tr>
+                </th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td> Domains </td>
+                </tr>
+            </tbody>
+        </table>
+    </td>
+    {% for msgid, domain_list in domains.items() %}
+    <td valign="top">
+        <table>
+            <thead>
+                <th>
+                    <tr><b> {{ msgid }} </b></tr>
+                </th>
+            </thead>
+            <tbody>
+                {% for domain in domain_list %}
+                <tr>
+                    <td> {{ domain }} </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </td>
+    {% endfor %}
+    </tr>
+</table>

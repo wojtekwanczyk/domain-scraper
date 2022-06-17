@@ -48,11 +48,11 @@ def scrape_domains(input_dir, archive_dir, dbfile):
 
 @cli.command()
 @click.option('-f', '--dbfile', default=DB_FILE, help='File with scraped domains')
-def send_summary(dbfile):
+@click.option('-a', '--all', is_flag=True, help='Send email with all scraped domains instead of only new emails')
+def send_summary(dbfile, all):
     """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
-    # TODO add option to send all domains, not only gatehered since last email
     mailer = DomainMailer(DB_FILE)
-    mailer.send_email()
+    mailer.send_email(all=all)
 
 @cli.command()
 def clean():

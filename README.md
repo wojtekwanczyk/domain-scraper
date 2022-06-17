@@ -17,11 +17,13 @@ Commands:
 
 ## TODO:
  - [x] move scanned emails to separate dir to avoid duplication
- - [ ] add html alternative message template + use it
+ - [ ] add requirements.txt file
+ - [x] add html alternative message template + use it
+ - [ ] do some refactoring, especially variable naming (msg, messages_to_send)
  - [ ] add setup.py, entrypoint and test building
  - [ ] create separate config file (INPUT_DIR, DB_FILE, DOMAINS_SUBSCRIBERS)
  - [ ] add logging and remove all prints
- - [ ] add option for send-summary to send all emails instead of only new emails
+ - [x] add option for send-summary to send all emails instead of only new emails
  - [ ] write unit tests
  - [ ] add docstrings
  - [ ] add types declarations
