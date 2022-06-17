@@ -1,3 +1,4 @@
+import click
 import os
 import re
 from email.parser import BytesHeaderParser
@@ -11,6 +12,7 @@ def read_emails_from_dir(input_dir):
     parser = BytesHeaderParser(policy=default)
     for email_filename in os.listdir(input_dir):
         email_path = os.path.join(input_dir, email_filename)
+        # throws FIleNotFoundError on non-existent dir
         with open(email_path, 'rb') as ef:
             emails.append(parser.parse(ef))
     return emails
@@ -39,7 +41,22 @@ class DomainScraper:
         return domains
 
 
+@click.group()
+def cli():
+    pass
+
+@cli.command()
+@click.option('-i', '--input-dir', default=INPUT_DIR, help='Input directory to read emails')
+def scrape_domains(input_dir):
+    """Scrape domains from emails from input_dir and print them"""
+    emails = read_emails_from_dir(input_dir)
+    print(DomainScraper().scrape_from_emails(emails))
+
+@cli.command()
+def send_summary():
+    """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
+    pass
+
 if __name__ == '__main__':
-    emails = read_emails_from_dir(INPUT_DIR)
-    print(DomainScraper().scrape(emails))
+    cli()
 
