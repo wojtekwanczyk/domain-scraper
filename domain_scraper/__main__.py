@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from re import A
 import click
 import os
 import shutil
@@ -31,15 +32,17 @@ def read_emails_from_dir(input_dir, archive_dir):
     return emails
 
 
-@click.group()
-def cli():
-    pass
+@click.group(invoke_without_command=True)
+@click.pass_context
+def cli(ctx):
+    if ctx.invoked_subcommand is None:
+        scrape_and_send.callback(INPUT_DIR, ARCHIVE_DIR, DB_FILE)
 
 @cli.command()
 @click.option('-i', '--input-dir', default=INPUT_DIR, help='Input directory to read emails')
 @click.option('-a', '--archive-dir', default=ARCHIVE_DIR, help='Archive directory to move emails')
 @click.option('-f', '--dbfile', default=DB_FILE, help='File to save scraped domains')
-def scrape_domains(input_dir, archive_dir, dbfile):
+def scrape(input_dir, archive_dir, dbfile):
     """Scrape domains from emails from input_dir and print them"""
     emails = read_emails_from_dir(input_dir, archive_dir)
     scraper = DomainScraper()
@@ -49,9 +52,9 @@ def scrape_domains(input_dir, archive_dir, dbfile):
 @cli.command()
 @click.option('-f', '--dbfile', default=DB_FILE, help='File with scraped domains')
 @click.option('-a', '--all', is_flag=True, help='Send email with all scraped domains instead of only new emails')
-def send_summary(dbfile, all):
+def send(dbfile, all):
     """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
-    mailer = DomainMailer(DB_FILE)
+    mailer = DomainMailer(dbfile)
     mailer.send_email(all=all)
 
 @cli.command()
@@ -61,6 +64,16 @@ def clean():
         os.rename(ARCHIVE_DIR, INPUT_DIR)
     if os.path.isfile(DB_FILE):
         os.unlink(DB_FILE)
+
+@cli.command()
+@click.option('-i', '--input-dir', default=INPUT_DIR, help='Input directory to read emails')
+@click.option('-a', '--archive-dir', default=ARCHIVE_DIR, help='Archive directory to move emails')
+@click.option('-f', '--dbfile', default=DB_FILE, help='File to save scraped domains')
+def scrape_and_send(input_dir, archive_dir, dbfile):
+    """Scrape domains and send email with summary - default command"""
+    scrape.callback(input_dir, archive_dir, dbfile)
+    send.callback(dbfile, False)
+
 
 if __name__ == '__main__':
     cli()
