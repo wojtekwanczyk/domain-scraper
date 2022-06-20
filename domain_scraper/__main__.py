@@ -7,8 +7,8 @@ import shutil
 from email.parser import BytesHeaderParser
 from email.policy import default
 
-from scraper import DomainMailer
-from scraper import DomainScraper
+from domain_scraper import DomainMailer
+from domain_scraper import DomainScraper
 
 
 # TODO could be moved to separate config file

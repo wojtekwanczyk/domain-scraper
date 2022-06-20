@@ -25,10 +25,11 @@ Commands:
  - [x] add requirements.txt file
  - [x] add html alternative message template + use it
  - [ ] do some refactoring, especially variable naming (msg, messages_to_send)
- - [ ] add setup.py, entrypoint and test building
+ - [x] add setup.cfg, entrypoint and test building
  - [ ] create separate config file (INPUT_DIR, DB_FILE, DOMAINS_SUBSCRIBERS)
  - [ ] add logging and remove all prints
  - [x] add option for send-summary to send all emails instead of only new emails
+ - [ ] add coverage measurement
  - [ ] write unit tests
  - [ ] add docstrings
  - [ ] add types declarations

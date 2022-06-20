@@ -1,5 +1,8 @@
+__pycache__/
+dist/
+*.egg-info/
+
 input
 archive
 notes.txt
 email_database.json
-__pycache__/

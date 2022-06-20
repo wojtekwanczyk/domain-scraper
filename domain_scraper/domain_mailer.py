@@ -1,5 +1,6 @@
 import json
 import os
+import pkg_resources
 import ssl
 import smtplib
 
@@ -62,7 +63,8 @@ class DomainMailer:
         today = date.today().strftime('%B %d, %Y')
         self.msg['Subject'] = f'Domain Scraper update for {today}'
 
-        with open('templates/summary.html') as f:
+        html_template_resource = pkg_resources.resource_filename(__name__, 'templates/summary.html')
+        with open(html_template_resource) as f:
             html_template = Template(f.read())
         html_body = html_template.render(domains=self.messages_to_send)
         part1 = MIMEText(json.dumps(self.messages_to_send, indent=2), 'plain')
