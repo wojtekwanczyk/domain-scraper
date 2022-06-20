@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from re import A
 import click
 import os
 import shutil
@@ -13,9 +12,9 @@ from domain_scraper import DomainScraper
 
 
 # TODO could be moved to separate config file
-INPUT_DIR = 'input'
-ARCHIVE_DIR = 'archive'
-DB_FILE = 'db/email_database.json'
+INPUT_DIR = os.environ.get('INPUT_DIR', 'input')
+ARCHIVE_DIR = os.environ.get('ARCHIVE_DIR', 'archive')
+DB_FILE = os.environ.get('DB_FILE', 'db/email_database.json')
 
 def read_emails_from_dir(input_dir, archive_dir):
     if not os.path.isdir(archive_dir):
@@ -54,7 +53,12 @@ def scrape(input_dir, archive_dir, dbfile):
 @click.option('-a', '--all', is_flag=True, help='Send email with all scraped domains instead of only new emails')
 def send(dbfile, all):
     """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
-    mailer = DomainMailer(dbfile)
+    try:
+        subscribers = os.environ['DOMAINS_SUBSCRIBERS'] # TODO 'domains_subscribers' should be validated with regex as comma separated valid email addresses 
+    except KeyError:
+        print("DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting...")
+        return
+    mailer = DomainMailer(dbfile, subscribers)
     mailer.send_email(all=all)
 
 @cli.command()
@@ -72,7 +76,7 @@ def clean():
 @click.option('-a', '--archive-dir', default=ARCHIVE_DIR, help='Archive directory to move emails')
 @click.option('-f', '--dbfile', default=DB_FILE, help='File to save scraped domains')
 def scrape_and_send(input_dir, archive_dir, dbfile):
-    """Scrape domains and send email with summary - default command"""
+    """Default command: Scrape domains and send email with summary"""
     scrape.callback(input_dir, archive_dir, dbfile)
     send.callback(dbfile, False)
 

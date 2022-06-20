@@ -11,14 +11,14 @@ from jinja2 import Template
 from pprint import pprint
 
 class DomainMailer:
-    def __init__(self, dbfile):
+    def __init__(self, dbfile, subscribers):
         self.dbfile = dbfile
         self.host = 'smtp.gmail.com'
         self.port = 465
+        self.domains_subscribers = subscribers
         try:
             self.sender = os.environ['GMAIL_APP_USERNAME']
             self.password = os.environ['GMAIL_APP_PASSWORD']
-            self.domains_subscribers = os.environ['DOMAINS_SUBSCRIBERS'] # TODO 'domains_subscribers' should be validated with regex as comma separated valid email addresses 
         except KeyError as err:
             print(f'Please set missing env variable for script to work: {err!s}')
         self.messages_to_send = None
