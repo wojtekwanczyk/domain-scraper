@@ -15,9 +15,14 @@ Commands:
   scrape-domains  Scrape domains from emails from input_dir and print them
   send-summary    Read domains from file and send email with update to DOMAIN_SUBSCRIBERS
 
-## TODO:
+## Important TODO:
+ - [ ] add Dockerfile, build and test the image
+ - [ ] add kubernetes yaml, verfy the deployment
+
+
+## Less important TODO:
  - [x] move scanned emails to separate dir to avoid duplication
- - [ ] add requirements.txt file
+ - [x] add requirements.txt file
  - [x] add html alternative message template + use it
  - [ ] do some refactoring, especially variable naming (msg, messages_to_send)
  - [ ] add setup.py, entrypoint and test building
@@ -27,3 +32,4 @@ Commands:
  - [ ] write unit tests
  - [ ] add docstrings
  - [ ] add types declarations
+ - [ ] evaluate domain parsing - separate ipv4/ipv6 parsing from domains
