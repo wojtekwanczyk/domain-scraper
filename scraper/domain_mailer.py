@@ -46,10 +46,12 @@ class DomainMailer:
     def update_sent_messages(self):
         with open(self.dbfile, 'r') as f:
             dbfile_dict = json.load(f)
+        unique_new_msgids = set(self.messages_to_send.keys())
         if 'sent_messages' in dbfile_dict:
-            dbfile_dict['sent_messages'].extend(list(self.messages_to_send.keys()))
+            unique_old_msgids = set(dbfile_dict['sent_messages'])
+            dbfile_dict['sent_messages'] = list(unique_old_msgids.union(unique_new_msgids))
         else:
-            dbfile_dict['sent_messages'] = list(self.messages_to_send.keys())
+            dbfile_dict['sent_messages'] = list(unique_new_msgids)
         with open(self.dbfile, 'w') as f:
             dbfile_dict = json.dump(dbfile_dict, f, indent=2)
 
