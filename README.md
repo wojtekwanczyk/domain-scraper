@@ -15,10 +15,23 @@ Commands:
   scrape-domains  Scrape domains from emails from input_dir and print them
   send-summary    Read domains from file and send email with update to DOMAIN_SUBSCRIBERS
 
+
+## Using docker image
+Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run command or use env.list file with --env-file flag, e.g.
+mkdir -p input archive
+docker run --rm \
+    --mount type=bind,source=${PWD}/input,target=/app/input \
+    --mount type=bind,source=${PWD}/archive,target=/app/archive \
+    --volume db:/app/db:rw \
+    -e GMAIL_APP_USERNAME -e GMAIL_APP_PASSWORD -e DOMAINS_SUBSCRIBERS \
+    domain-scraper domain-scraper scrape
+
+# TODO dockerfile
+ - [ ] add possibility to read INPUT_DIR, ARCHIEVE_DIR, DB_FILE from env
+
 ## Important TODO:
  - [ ] add Dockerfile, build and test the image
  - [ ] add kubernetes yaml, verfy the deployment
-
 
 ## Less important TODO:
  - [x] move scanned emails to separate dir to avoid duplication

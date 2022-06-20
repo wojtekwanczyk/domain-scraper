@@ -15,7 +15,7 @@ from domain_scraper import DomainScraper
 # TODO could be moved to separate config file
 INPUT_DIR = 'input'
 ARCHIVE_DIR = 'archive'
-DB_FILE = 'email_database.json'
+DB_FILE = 'db/email_database.json'
 
 def read_emails_from_dir(input_dir, archive_dir):
     if not os.path.isdir(archive_dir):
@@ -61,7 +61,9 @@ def send(dbfile, all):
 def clean():
     """For testing purposes: remove DB_FILE, rename ARCHIVE_DIR to INPUT_DIR"""
     if os.path.isdir(ARCHIVE_DIR):
-        os.rename(ARCHIVE_DIR, INPUT_DIR)
+        file_names = os.listdir(ARCHIVE_DIR)
+        for file_name in file_names:
+            shutil.move(os.path.join(ARCHIVE_DIR, file_name), INPUT_DIR)
     if os.path.isfile(DB_FILE):
         os.unlink(DB_FILE)
 

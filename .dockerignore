@@ -1,0 +1,9 @@
+*.egg-info
+input
+archive
+venv
+.gitignore
+.dockerignore
+Dockerfile
+env.list
+README*
