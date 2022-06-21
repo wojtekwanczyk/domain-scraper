@@ -17,7 +17,7 @@ spec:
               - name: INPUT_DIR
                 value: "emails/input"
               - name: ARCHIVE_DIR
-                value: "emails/archieve"
+                value: "emails/archive"
               - name: DB_FILE
                 value: "db/email_database.json"
             envFrom:
@@ -26,9 +26,37 @@ spec:
             volumeMounts:
               - mountPath: /domain-scraper/emails
                 name: emails-volume
+              - mountPath: /domain-scraper/db
+                name: db-storage
             imagePullPolicy: Never
           restartPolicy: Never
           volumes:
           - name: emails-volume
             hostPath:
               path: /hosthome/domain-scraper-workdir/emails
+          - name: db-storage
+            persistentVolumeClaim:
+              claimName: db-pvc
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: db-pv
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  hostPath:
+    path: /data/db-pv/
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
