@@ -25,12 +25,9 @@ class DomainMailer:
         self.msg = None
 
     def read_messages_to_send(self, all=False):
-        ""
-        try:
-            with open(self.dbfile, 'r') as f:
-                dbfile_dict = json.load(f)
-        except FileNotFoundError as err:
-            raise FileNotFoundError(f"DB FILE missing ({err.filename}). Please run domain scraping first")
+        """Throws FileNotFoundError when DB_FILE does not exist"""
+        with open(self.dbfile, 'r') as f:
+            dbfile_dict = json.load(f)
         sent_messages = dbfile_dict.get('sent_messages', [])
         if not sent_messages or all:
             self.messages_to_send = dbfile_dict['domains']
@@ -73,7 +70,11 @@ class DomainMailer:
         self.msg.attach(part2)
 
     def send_email(self, all=False):
-        self.read_messages_to_send(all=all)
+        try:
+            self.read_messages_to_send(all=all)
+        except FileNotFoundError as err:
+            print(f"DB FILE missing: ({err.filename}). Please run domain scraping first")
+            return
         if not self.messages_to_send:
             # TODO substitute with logging
             print("No new messages, skipping email sending")
@@ -88,3 +89,4 @@ class DomainMailer:
         with smtplib.SMTP_SSL(self.host, self.port, context=context) as server:
             server.login(self.sender, self.password)
             server.send_message(self.msg)
+        print("Email sent.")
