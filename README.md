@@ -19,11 +19,10 @@ Commands:
 
 ## Using docker image
 Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run command or use env.list file with --env-file flag, e.g.
-mkdir -p input archive
+mkdir -p emails/input emails/archive
 app_path="/domain-scraper"
 docker run --rm \
-    --mount type=bind,source=${PWD}/input,target=${app_path}/input \
-    --mount type=bind,source=${PWD}/archive,target=${app_path}/archive \
+    --mount type=bind,source=${PWD}/emails,target=${app_path}/emails \
     --volume db:${app_path}/db:rw \
     -e GMAIL_APP_USERNAME -e GMAIL_APP_PASSWORD -e DOMAINS_SUBSCRIBERS \
     domain-scraper domain-scraper scrape
@@ -39,6 +38,7 @@ docker run --rm \
  - [x] add option for send-summary to send all emails instead of only new emails
  - [x] add setup.cfg, entrypoint and test building
  - [x] add Dockerfile, build and test the image
+ - [ ] create helm chart from the repo
  - [ ] create and use separate config file (INPUT_DIR, DB_FILE, DOMAINS_SUBSCRIBERS)
  - [ ] do some refactoring, especially variable naming (msg, messages_to_send)
  - [ ] add logging and remove all prints

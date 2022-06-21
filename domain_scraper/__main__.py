@@ -12,8 +12,8 @@ from domain_scraper import DomainScraper
 
 
 # TODO could be moved to separate config file
-INPUT_DIR = os.environ.get('INPUT_DIR', 'input')
-ARCHIVE_DIR = os.environ.get('ARCHIVE_DIR', 'archive')
+INPUT_DIR = os.environ.get('INPUT_DIR', 'emails/input')
+ARCHIVE_DIR = os.environ.get('ARCHIVE_DIR', 'emails/archive')
 DB_FILE = os.environ.get('DB_FILE', 'db/email_database.json')
 
 def read_emails_from_dir(input_dir, archive_dir):

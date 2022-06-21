@@ -1,4 +1,5 @@
 import json
+import os
 import re
 
 from collections import defaultdict
@@ -34,9 +35,17 @@ class DomainScraper:
                 dbfile_dict = json.load(f)
         except FileNotFoundError:
             dbfile_dict = defaultdict(dict)
+
         if self.domains:
             dbfile_dict['domains'].update(self.domains)
-            pprint(self.domains)
+            # pprint(self.domains)
+
+            # make sure db file dir exists
+            dbfile_path = os.path.dirname(dbfile)
+            if not os.path.exists(dbfile_path):
+                print(f"DBFILE PATH DOES not exists, creating {dbfile_path}")
+                os.makedirs(dbfile_path)
+
             with open(dbfile, 'w') as f:
                 json.dump(dbfile_dict, f, indent=2)
         else:

@@ -30,7 +30,7 @@ class DomainMailer:
             with open(self.dbfile, 'r') as f:
                 dbfile_dict = json.load(f)
         except FileNotFoundError as err:
-            raise FileNotFoundError(f"DB FILE missing ({err.filename}). Call 'get_domains.py scrape-domains' first")
+            raise FileNotFoundError(f"DB FILE missing ({err.filename}). Please run domain scraping first")
         sent_messages = dbfile_dict.get('sent_messages', [])
         if not sent_messages or all:
             self.messages_to_send = dbfile_dict['domains']
