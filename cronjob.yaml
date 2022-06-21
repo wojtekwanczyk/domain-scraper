@@ -11,8 +11,10 @@ spec:
           containers:
           - name: domain-scarper
             image: domain-scraper
-            # command: [ "sleep", "3600" ]
             command: [ "domain-scraper" ]
+            envFrom:
+              - secretRef:
+                  name: email-secrets
             volumeMounts:
               - mountPath: /domain-scraper/emails
                 name: emails-volume
