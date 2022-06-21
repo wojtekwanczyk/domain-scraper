@@ -69,8 +69,10 @@ def clean():
     """For testing purposes: remove DB_FILE, rename ARCHIVE_DIR to INPUT_DIR"""
     if os.path.isdir(ARCHIVE_DIR):
         file_names = os.listdir(ARCHIVE_DIR)
-        for file_name in file_names:
-            shutil.move(os.path.join(ARCHIVE_DIR, file_name), INPUT_DIR)
+        for filename in file_names:
+            filename_wo_timestamp = filename.rsplit(sep='_', maxsplit=1)[0]
+            clean_filepath = os.path.join(INPUT_DIR, filename_wo_timestamp)
+            shutil.move(os.path.join(ARCHIVE_DIR, filename), clean_filepath)
     if os.path.isfile(DB_FILE):
         os.unlink(DB_FILE)
 
