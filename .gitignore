@@ -3,6 +3,5 @@ dist/
 *.egg-info/
 build
 
-input
-archive
+emails
 email_database.json
