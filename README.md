@@ -37,8 +37,7 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
 
 ## In progress:
  - [ ] add kubernetes yaml, verify the deployment
- - [x] add variables to deployment with secrets.yaml (email-secrets)
- - [ ] configure persistent volume to store db
+ - [ ] do some refactoring, especially variable naming (msg, messages_to_send)
 
 ## TODO:
  - [x] move scanned emails to separate dir to avoid duplication
@@ -48,9 +47,9 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
  - [x] add option for send-summary to send all emails instead of only new emails
  - [x] add setup.cfg, entrypoint and test building
  - [x] add Dockerfile, build and test the image
+ - [x] add variables to deployment with secrets.yaml (email-secrets)
+ - [x] configure persistent volume to store db
  - [ ] create helm chart from the repo
- - [ ] create and use separate config file (INPUT_DIR, DB_FILE, DOMAINS_SUBSCRIBERS)
- - [ ] do some refactoring, especially variable naming (msg, messages_to_send)
  - [ ] add logging and remove all prints
  - [ ] add coverage measurement
  - [ ] write unit tests

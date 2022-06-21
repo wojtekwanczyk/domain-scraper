@@ -39,18 +39,6 @@ spec:
               claimName: db-pvc
 ---
 apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: db-pv
-spec:
-  accessModes:
-    - ReadWriteOnce
-  capacity:
-    storage: 1Gi
-  hostPath:
-    path: /data/db-pv/
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: db-pvc
