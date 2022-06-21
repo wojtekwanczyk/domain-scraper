@@ -6,6 +6,7 @@ import shutil
 
 from email.parser import BytesHeaderParser
 from email.policy import default
+from time import time
 
 from domain_scraper import DomainMailer
 from domain_scraper import DomainScraper
@@ -27,7 +28,9 @@ def read_emails_from_dir(input_dir, archive_dir):
         # throws FileNotFoundError on non-existent dir
         with open(email_path, 'rb') as ef:
             emails.append(parser.parse(ef))
-        shutil.move(email_path, archive_dir) # move parsed emails to archive
+        new_email_name = f"{email_filename}_{str(int(time()))}" # timestamp added to avoid OSError during renaming
+        new_email_path = os.path.join(archive_dir, new_email_name)
+        shutil.move(email_path, new_email_path) # move parsed emails to archive
     return emails
 
 
