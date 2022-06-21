@@ -20,15 +20,23 @@ Commands:
 ## Using docker image
 Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run command or use env.list file with --env-file flag, e.g.
 mkdir -p emails/input emails/archive
+
 app_path="/domain-scraper"
+
 docker run --rm \
-    --mount type=bind,source=${PWD}/emails,target=${app_path}/emails \
+    --mount type=bind,source=\${PWD}/emails,target=\${app_path}/emails \
     --volume db:${app_path}/db:rw \
     -e GMAIL_APP_USERNAME -e GMAIL_APP_PASSWORD -e DOMAINS_SUBSCRIBERS \
     domain-scraper domain-scraper scrape
 
+## minikube deployment
+minikube mount $HOME:/hosthome # run in separate terminal
+kubectl create -f cronjob.yaml
+
 ## In progress:
- - [ ] add kubernetes yaml, verfy the deployment
+ - [ ] add kubernetes yaml, verify the deployment
+ - [ ] add variables to deployment - ConfigMap
+ - [ ] configure persistent volume to store db
 
 ## TODO:
  - [x] move scanned emails to separate dir to avoid duplication
