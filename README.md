@@ -36,7 +36,6 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
     kubectl create -f cronjob.yaml
 
 ## In progress:
- - [ ] add kubernetes yaml, verify the deployment
  - [ ] do some refactoring, especially variable naming (msg, messages_to_send)
 
 ## TODO:
@@ -49,6 +48,7 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
  - [x] add Dockerfile, build and test the image
  - [x] add variables to deployment with secrets.yaml (email-secrets)
  - [x] configure persistent volume to store db
+ - [x] add kubernetes yaml, verify the deployment
  - [ ] create helm chart from the repo
  - [ ] add logging and remove all prints
  - [ ] add coverage measurement
@@ -56,3 +56,4 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
  - [ ] add docstrings
  - [ ] add types declarations
  - [ ] evaluate domain parsing - separate ipv4/ipv6 parsing from domains
+ - [ ] add exception handling when file in INPUT_DIR is not email file or does not contain Received header
