@@ -8,30 +8,36 @@ from email.parser import BytesHeaderParser
 from email.policy import default
 from time import time
 
-from domain_scraper import DomainMailer
+from domain_scraper import GmailMailer
 from domain_scraper import DomainScraper
 
 
-# TODO could be moved to separate config file
 INPUT_DIR = os.environ.get('INPUT_DIR', 'emails/input')
 ARCHIVE_DIR = os.environ.get('ARCHIVE_DIR', 'emails/archive')
 DB_FILE = os.environ.get('DB_FILE', 'db/email_database.json')
 
 def read_emails_from_dir(input_dir, archive_dir):
+    emails_list = []
+    if not os.path.isdir(input_dir):
+        print(f"INPUT_DIR ({input_dir}) does not exist!")
+        return emails_list # empty list
     if not os.path.isdir(archive_dir):
         os.mkdir(archive_dir)
 
-    emails = []
     parser = BytesHeaderParser(policy=default)
     for email_filename in os.listdir(input_dir):
+        # TODO: what if file is not a valid email?
+
+        # read and parse email
         email_path = os.path.join(input_dir, email_filename)
-        # throws FileNotFoundError on non-existent dir
         with open(email_path, 'rb') as ef:
-            emails.append(parser.parse(ef))
+            emails_list.append(parser.parse(ef))
+        
+        # move parsed email to ARCHIVE_DIR
         new_email_name = f"{email_filename}_{str(int(time()))}" # timestamp added to avoid OSError during renaming
         new_email_path = os.path.join(archive_dir, new_email_name)
-        shutil.move(email_path, new_email_path) # move parsed emails to archive
-    return emails
+        shutil.move(email_path, new_email_path)
+    return emails_list
 
 
 @click.group(invoke_without_command=True)
@@ -61,18 +67,23 @@ def send(dbfile, all):
     except KeyError:
         print("DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting...")
         return
-    mailer = DomainMailer(dbfile, subscribers)
+    mailer = GmailMailer(dbfile, subscribers)
     mailer.send_email(all=all)
 
 @cli.command()
 def clean():
     """For testing purposes: remove DB_FILE, rename ARCHIVE_DIR to INPUT_DIR"""
+    if not os.path.isdir(INPUT_DIR):
+        os.mkdir(INPUT_DIR)
+
     if os.path.isdir(ARCHIVE_DIR):
         file_names = os.listdir(ARCHIVE_DIR)
         for filename in file_names:
-            filename_wo_timestamp = filename.rsplit(sep='_', maxsplit=1)[0]
-            clean_filepath = os.path.join(INPUT_DIR, filename_wo_timestamp)
-            shutil.move(os.path.join(ARCHIVE_DIR, filename), clean_filepath)
+            filepath = os.path.join(ARCHIVE_DIR, filename)
+            # remove timestamps
+            original_filename = filename.rsplit(sep='_', maxsplit=1)[0]
+            original_filepath = os.path.join(INPUT_DIR, original_filename)
+            shutil.move(filepath, original_filepath)
     if os.path.isfile(DB_FILE):
         os.unlink(DB_FILE)
 

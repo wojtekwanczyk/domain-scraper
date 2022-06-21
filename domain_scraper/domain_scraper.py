@@ -3,7 +3,6 @@ import os
 import re
 
 from collections import defaultdict
-from pprint import pprint
 
 
 class DomainScraper:
@@ -19,34 +18,37 @@ class DomainScraper:
             self.domains.update(email_domains)
 
     def get_domains_for_email(self, email):
+        """Returns dict with single element; Message-ID: [domains]"""
         received_headers = email.get_all('Received')
-        email_domains = set()
-        for received in received_headers:
-            if domain := self.from_regex.search(received):
+        email_domains = set() # use set to avoid duplicates
+        for received_header in received_headers:
+            if domain := self.from_regex.search(received_header):
                 email_domains.add(domain.group(1))
-            if domain := self.by_regex.search(received):
+            if domain := self.by_regex.search(received_header):
                 email_domains.add(domain.group(1))
         message_id = email['Message-ID'].strip('\t<>')
         return {message_id: list(email_domains)}
     
+    @staticmethod
+    def make_sure_dirname_exists(file):
+        dirname = os.path.dirname(file)
+        if not os.path.exists(dirname):
+            print(f"DBFILE PATH DOES not exists, creating {dirname}")
+            os.makedirs(dirname)
+    
     def save(self, dbfile):
+        if not self.domains:
+            print("No new emails parsed, please check INPUT_DIR")
+            return False
+
         try:
             with open(dbfile, 'r') as f:
                 dbfile_dict = json.load(f)
         except FileNotFoundError:
             dbfile_dict = defaultdict(dict)
 
-        if self.domains:
-            dbfile_dict['domains'].update(self.domains)
-            # pprint(self.domains)
+        dbfile_dict['domains'].update(self.domains)
+        self.make_sure_dirname_exists(dbfile)
 
-            # make sure db file dir exists
-            dbfile_path = os.path.dirname(dbfile)
-            if not os.path.exists(dbfile_path):
-                print(f"DBFILE PATH DOES not exists, creating {dbfile_path}")
-                os.makedirs(dbfile_path)
-
-            with open(dbfile, 'w') as f:
-                json.dump(dbfile_dict, f, indent=2)
-        else:
-            print("No new emails parsed, please check INPUT_DIR")
+        with open(dbfile, 'w') as f:
+            json.dump(dbfile_dict, f, indent=2)
