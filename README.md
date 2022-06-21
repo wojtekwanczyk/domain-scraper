@@ -24,7 +24,7 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
     image_name="domain-scraper"
     app_path="/domain-scraper"
     docker run --rm \
-        --mount type=bind,source=\${PWD}/emails,target=\${app_path}/emails \
+        --mount type=bind,source=${PWD}/emails,target=${app_path}/emails \
         --volume db:${app_path}/db:rw \
         -e GMAIL_APP_USERNAME -e GMAIL_APP_PASSWORD -e DOMAINS_SUBSCRIBERS \
         "${image_name}" domain-scraper scrape
@@ -34,9 +34,6 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
 
     kubectl apply -f secrets.yaml # prepare secrets.yaml file with GMAIL_APP_USERNAME, GMAIL_APP_PASSWORD and DOMAINS_SUBSCRIBERS defined
     kubectl create -f cronjob.yaml
-
-## In progress:
- - [ ] do some refactoring, especially variable naming (msg, messages_to_send)
 
 ## TODO:
  - [x] move scanned emails to separate dir to avoid duplication
@@ -49,6 +46,7 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
  - [x] add variables to deployment with secrets.yaml (email-secrets)
  - [x] configure persistent volume to store db
  - [x] add kubernetes yaml, verify the deployment
+ - [x] do some refactoring, especially variable naming (msg, messages_to_send)
  - [ ] create helm chart from the repo
  - [ ] add logging and remove all prints
  - [ ] add coverage measurement
