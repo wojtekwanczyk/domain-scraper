@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: ds
 spec:
-  schedule: "* * * * *"
+  schedule: "* * * * *" # "0 0 * * *" should be once per day but testing every minute is more convenient
   jobTemplate:
     spec:
       template:
