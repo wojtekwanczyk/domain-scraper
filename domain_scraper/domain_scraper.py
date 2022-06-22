@@ -9,12 +9,14 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
+
 class DomainScraper:
     """Scrape domains from raw emails and save them to dbfile"""
+
     def __init__(self):
-        separators = r'from|by|via|with|id|for|;'
-        regex_from_str = r'from\s+(.+?)\s+(' + separators + r')'
-        regex_by_str = r'by\s+(.+?)\s+(' + separators + r')'
+        separators = r"from|by|via|with|id|for|;"
+        regex_from_str = r"from\s+(.+?)\s+(" + separators + r")"
+        regex_by_str = r"by\s+(.+?)\s+(" + separators + r")"
         self.regex_from = re.compile(regex_from_str)
         self.regex_by = re.compile(regex_by_str)
         self.domains = {}
@@ -27,14 +29,14 @@ class DomainScraper:
 
     def get_domains_for_email(self, email):
         """Returns dict with single element; Message-ID: [domains]"""
-        received_headers = email.get_all('Received')
-        email_domains = set() # use set to avoid duplicates
+        received_headers = email.get_all("Received")
+        email_domains = set()  # use set to avoid duplicates
         for received_header in received_headers:
             if domain := self.regex_from.search(received_header):
                 email_domains.add(domain.group(1))
             if domain := self.regex_by.search(received_header):
                 email_domains.add(domain.group(1))
-        message_id = email['Message-ID'].strip('\t<>')
+        message_id = email["Message-ID"].strip("\t<>")
         return {message_id: list(email_domains)}
 
     @staticmethod
@@ -55,14 +57,14 @@ class DomainScraper:
             return False
 
         try:
-            with open(dbfile, 'r', encoding='utf-8') as file:
+            with open(dbfile, "r", encoding="utf-8") as file:
                 dbfile_dict = json.load(file)
         except FileNotFoundError:
             dbfile_dict = defaultdict(dict)
 
-        dbfile_dict['domains'].update(self.domains)
+        dbfile_dict["domains"].update(self.domains)
         self.make_sure_dirname_exists(dbfile)
 
-        with open(dbfile, 'w', encoding='utf-8') as file:
+        with open(dbfile, "w", encoding="utf-8") as file:
             json.dump(dbfile_dict, file, indent=2)
         return True
