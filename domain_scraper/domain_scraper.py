@@ -1,3 +1,5 @@
+"""Scrape domains from raw emails and save them to dbfile"""
+
 import json
 import os
 import re
@@ -6,13 +8,17 @@ from collections import defaultdict
 
 
 class DomainScraper:
+    """Scrape domains from raw emails and save them to dbfile"""
     def __init__(self):
-        separators = 'from|by|via|with|id|for|;'
-        self.regex_from = re.compile(f'from\s+(.+?)\s+({separators})')
-        self.regex_by = re.compile(f'by\s+(.+?)\s+({separators})')
-        self.domains = dict()
+        separators = r'from|by|via|with|id|for|;'
+        regex_from_str = r'from\s+(.+?)\s+(' + separators + r')'
+        regex_by_str = r'by\s+(.+?)\s+(' + separators + r')'
+        self.regex_from = re.compile(regex_from_str)
+        self.regex_by = re.compile(regex_by_str)
+        self.domains = {}
 
     def scrape_from_emails(self, emails):
+        """Iterate over emails and scrape domains from them"""
         for email in emails:
             email_domains = self.get_domains_for_email(email)
             self.domains.update(email_domains)
@@ -28,27 +34,33 @@ class DomainScraper:
                 email_domains.add(domain.group(1))
         message_id = email['Message-ID'].strip('\t<>')
         return {message_id: list(email_domains)}
-    
+
     @staticmethod
     def make_sure_dirname_exists(file):
+        """Make sure base directory from file exists to avoid exception"""
         dirname = os.path.dirname(file)
         if not os.path.exists(dirname):
             print(f"DBFILE PATH DOES not exists, creating {dirname}")
             os.makedirs(dirname)
-    
+
     def save(self, dbfile):
+        """
+        Save scraped domains to dbfile.
+        If no domains are parsed, returns False
+        """
         if not self.domains:
             print("No new emails parsed, please check INPUT_DIR")
             return False
 
         try:
-            with open(dbfile, 'r') as f:
-                dbfile_dict = json.load(f)
+            with open(dbfile, 'r') as file:
+                dbfile_dict = json.load(file)
         except FileNotFoundError:
             dbfile_dict = defaultdict(dict)
 
         dbfile_dict['domains'].update(self.domains)
         self.make_sure_dirname_exists(dbfile)
 
-        with open(dbfile, 'w') as f:
-            json.dump(dbfile_dict, f, indent=2)
+        with open(dbfile, 'w') as file:
+            json.dump(dbfile_dict, file, indent=2)
+        return True

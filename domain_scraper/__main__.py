@@ -1,12 +1,13 @@
-#!/usr/bin/env python3
+"""Argument parser for domain-scraper module"""
 
-import click
 import os
 import shutil
 
 from email.parser import BytesHeaderParser
 from email.policy import default
 from time import time
+
+import click
 
 from domain_scraper import GmailMailer
 from domain_scraper import DomainScraper
@@ -17,6 +18,7 @@ ARCHIVE_DIR = os.environ.get('ARCHIVE_DIR', 'emails/archive')
 DB_FILE = os.environ.get('DB_FILE', 'db/email_database.json')
 
 def read_emails_from_dir(input_dir, archive_dir):
+    """Parse emails from input_dir, move them to archive_dir"""
     emails_list = []
     if not os.path.isdir(input_dir):
         print(f"INPUT_DIR ({input_dir}) does not exist!")
@@ -30,11 +32,12 @@ def read_emails_from_dir(input_dir, archive_dir):
 
         # read and parse email
         email_path = os.path.join(input_dir, email_filename)
-        with open(email_path, 'rb') as ef:
-            emails_list.append(parser.parse(ef))
-        
+        with open(email_path, 'rb') as file:
+            emails_list.append(parser.parse(file))
+
         # move parsed email to ARCHIVE_DIR
-        new_email_name = f"{email_filename}_{str(int(time()))}" # timestamp added to avoid OSError during renaming
+        # timestamp added to avoid OSError during renaming
+        new_email_name = f"{email_filename}_{str(int(time()))}"
         new_email_path = os.path.join(archive_dir, new_email_name)
         shutil.move(email_path, new_email_path)
     return emails_list
@@ -59,16 +62,18 @@ def scrape(input_dir, archive_dir, dbfile):
 
 @cli.command()
 @click.option('-f', '--dbfile', default=DB_FILE, help='File with scraped domains')
-@click.option('-a', '--all', is_flag=True, help='Send email with all scraped domains instead of only new emails')
-def send(dbfile, all):
+@click.option('-a', '--all-emails', is_flag=True, help='Send email with all scraped domains instead of only new emails')
+def send(dbfile, all_emails):
     """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
     try:
-        subscribers = os.environ['DOMAINS_SUBSCRIBERS'] # TODO 'domains_subscribers' should be validated with regex as comma separated valid email addresses 
+        # TODO: 'domains_subscribers' should be validated with regex
+        # as comma separated valid email addresses
+        subscribers = os.environ['DOMAINS_SUBSCRIBERS']
     except KeyError:
         print("DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting...")
         return
     mailer = GmailMailer(dbfile, subscribers)
-    mailer.send_email(all=all)
+    mailer.send_email(all_emails=all_emails)
 
 @cli.command()
 def clean():
@@ -99,4 +104,3 @@ def scrape_and_send(input_dir, archive_dir, dbfile):
 
 if __name__ == '__main__':
     cli()
-
