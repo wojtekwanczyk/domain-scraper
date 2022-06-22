@@ -4,7 +4,6 @@ venv
 .gitignore
 .dockerignore
 Dockerfile
-env.list
 README*
 
 emails
