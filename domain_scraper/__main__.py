@@ -1,6 +1,7 @@
 """Argument parser for domain-scraper module"""
 
 import argparse
+import logging
 import os
 import shutil
 import sys
@@ -9,13 +10,16 @@ from email.parser import BytesHeaderParser
 from email.policy import default
 from time import time
 
-from domain_scraper import GmailMailer
-from domain_scraper import DomainScraper
+from .gmail_mailer import GmailMailer
+from .domain_scraper import DomainScraper
 
 
 INPUT_DIR = os.environ.get('INPUT_DIR', 'emails/input')
 ARCHIVE_DIR = os.environ.get('ARCHIVE_DIR', 'emails/archive')
 DB_FILE = os.environ.get('DB_FILE', 'db/email_database.json')
+
+logger = logging.getLogger(__name__)
+
 
 def main():
     """Parse arguments from command line"""
@@ -59,11 +63,9 @@ def scrape(args):
 def send(args):
     """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
     try:
-        # TODO: 'domains_subscribers' should be validated with regex
-        # as comma separated valid email addresses
         subscribers = os.environ['DOMAINS_SUBSCRIBERS']
     except KeyError:
-        print("DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting...")
+        logger.error("DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting...")
         return
     mailer = GmailMailer(args.dbfile, subscribers)
     mailer.send_email(all_emails=args.force)
@@ -97,18 +99,17 @@ def read_emails_from_dir(input_dir, archive_dir):
     """Parse emails from input_dir, move them to archive_dir"""
     emails_list = []
     if not os.path.isdir(input_dir):
-        print(f"INPUT_DIR ({input_dir}) does not exist!")
+        logger.warning("INPUT_DIR (%s) does not exist!", input_dir)
         return emails_list # empty list
     if not os.path.isdir(archive_dir):
         os.mkdir(archive_dir)
 
     parser = BytesHeaderParser(policy=default)
     for email_filename in os.listdir(input_dir):
-        # TODO: what if file is not a valid email?
 
         # read and parse email
         email_path = os.path.join(input_dir, email_filename)
-        with open(email_path, 'rb') as file:
+        with open(email_path, 'rb', encoding='utf-8') as file:
             emails_list.append(parser.parse(file))
 
         # move parsed email to ARCHIVE_DIR

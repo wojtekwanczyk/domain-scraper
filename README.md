@@ -55,3 +55,5 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
  - [ ] add types declarations
  - [ ] evaluate domain parsing - separate ipv4/ipv6 parsing from domains
  - [ ] add exception handling when file in INPUT_DIR is not email file or does not contain Received header
+ - [ ] add validation for input files, to check if they are actually emails
+ - [ ] add validation for DOMAINS_SUBSCRIBERS

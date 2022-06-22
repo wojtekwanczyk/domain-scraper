@@ -1,11 +1,14 @@
 """Scrape domains from raw emails and save them to dbfile"""
 
 import json
+import logging
 import os
 import re
 
 from collections import defaultdict
 
+
+logger = logging.getLogger(__name__)
 
 class DomainScraper:
     """Scrape domains from raw emails and save them to dbfile"""
@@ -40,7 +43,7 @@ class DomainScraper:
         """Make sure base directory from file exists to avoid exception"""
         dirname = os.path.dirname(file)
         if not os.path.exists(dirname):
-            print(f"DBFILE PATH DOES not exists, creating {dirname}")
+            logger.debug("DBFILE PATH DOES not exists, creating %s", dirname)
             os.makedirs(dirname)
 
     def save(self, dbfile):
@@ -49,11 +52,11 @@ class DomainScraper:
         If no domains are parsed, returns False
         """
         if not self.domains:
-            print("No new emails parsed, please check INPUT_DIR")
+            logger.info("No new emails parsed, please check INPUT_DIR")
             return False
 
         try:
-            with open(dbfile, 'r') as file:
+            with open(dbfile, 'r', encoding='utf-8') as file:
                 dbfile_dict = json.load(file)
         except FileNotFoundError:
             dbfile_dict = defaultdict(dict)
@@ -61,6 +64,6 @@ class DomainScraper:
         dbfile_dict['domains'].update(self.domains)
         self.make_sure_dirname_exists(dbfile)
 
-        with open(dbfile, 'w') as file:
+        with open(dbfile, 'w', encoding='utf-8') as file:
             json.dump(dbfile_dict, file, indent=2)
         return True
