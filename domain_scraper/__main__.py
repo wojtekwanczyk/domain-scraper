@@ -1,13 +1,13 @@
 """Argument parser for domain-scraper module"""
 
+import argparse
 import os
 import shutil
+import sys
 
 from email.parser import BytesHeaderParser
 from email.policy import default
 from time import time
-
-import click
 
 from domain_scraper import GmailMailer
 from domain_scraper import DomainScraper
@@ -16,6 +16,82 @@ from domain_scraper import DomainScraper
 INPUT_DIR = os.environ.get('INPUT_DIR', 'emails/input')
 ARCHIVE_DIR = os.environ.get('ARCHIVE_DIR', 'emails/archive')
 DB_FILE = os.environ.get('DB_FILE', 'db/email_database.json')
+
+def main():
+    """Parse arguments from command line"""
+    parser = argparse.ArgumentParser("Scrape domains from emails and send summary email")
+    parser.add_argument('-e', '--email', help="Path to single email to scrape")
+    parser.add_argument('-d', '--dbfile', default=DB_FILE,
+                        help="File to save scraped domains")
+    parser.add_argument('-i', '--input-dir', default=INPUT_DIR,
+         help="Input directory to read emails")
+    parser.add_argument('-a', '--archive-dir', default=ARCHIVE_DIR,
+        help="Archive directory to move emails")
+    parser.add_argument('-f', '--force', action='store_true', default=False,
+        help="Force sending email with all scraped domains instead of only new emails")
+    subparsers = parser.add_subparsers()
+
+    scrape_parser = subparsers.add_parser('scrape')
+    scrape_parser.set_defaults(func=scrape)
+
+    send_parser = subparsers.add_parser('send')
+    send_parser.set_defaults(func=send)
+
+    default_parser = subparsers.add_parser('scrape-and-send')
+    default_parser.set_defaults(func=scrape_and_send)
+
+    clean_parser = subparsers.add_parser('clean')
+    clean_parser.set_defaults(func=clean)
+
+    args = parser.parse_args()
+    if not hasattr(args, 'func'):
+        args.func = scrape_and_send
+
+    return args.func(args)
+
+def scrape(args):
+    """Scrape domains from emails from input_dir and print them"""
+    emails = read_emails_from_dir(args.input_dir, args.archive_dir)
+    scraper = DomainScraper()
+    scraper.scrape_from_emails(emails)
+    scraper.save(args.dbfile)
+
+def send(args):
+    """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
+    try:
+        # TODO: 'domains_subscribers' should be validated with regex
+        # as comma separated valid email addresses
+        subscribers = os.environ['DOMAINS_SUBSCRIBERS']
+    except KeyError:
+        print("DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting...")
+        return
+    mailer = GmailMailer(args.dbfile, subscribers)
+    mailer.send_email(all_emails=args.force)
+
+def scrape_and_send(args):
+    """Default command: Scrape domains and send email with summary"""
+    scrape(args)
+    send(args)
+
+def clean(args):
+    """
+    For testing purposes.
+    Remove dbfile, move content from archive_dir to input_dir.
+    """
+    if os.path.isfile(args.dbfile):
+        os.unlink(args.dbfile)
+
+    if not os.path.isdir(args.input_dir):
+        os.mkdir(args.input_dir)
+
+    if os.path.isdir(args.archive_dir):
+        file_names = os.listdir(args.archive_dir)
+        for filename in file_names:
+            filepath = os.path.join(args.archive_dir, filename)
+            # remove timestamps
+            original_filename = filename.rsplit(sep='_', maxsplit=1)[0]
+            original_filepath = os.path.join(args.input_dir, original_filename)
+            shutil.move(filepath, original_filepath)
 
 def read_emails_from_dir(input_dir, archive_dir):
     """Parse emails from input_dir, move them to archive_dir"""
@@ -43,64 +119,5 @@ def read_emails_from_dir(input_dir, archive_dir):
     return emails_list
 
 
-@click.group(invoke_without_command=True)
-@click.pass_context
-def cli(ctx):
-    if ctx.invoked_subcommand is None:
-        scrape_and_send.callback(INPUT_DIR, ARCHIVE_DIR, DB_FILE)
-
-@cli.command()
-@click.option('-i', '--input-dir', default=INPUT_DIR, help='Input directory to read emails')
-@click.option('-a', '--archive-dir', default=ARCHIVE_DIR, help='Archive directory to move emails')
-@click.option('-f', '--dbfile', default=DB_FILE, help='File to save scraped domains')
-def scrape(input_dir, archive_dir, dbfile):
-    """Scrape domains from emails from input_dir and print them"""
-    emails = read_emails_from_dir(input_dir, archive_dir)
-    scraper = DomainScraper()
-    scraper.scrape_from_emails(emails)
-    scraper.save(dbfile)
-
-@cli.command()
-@click.option('-f', '--dbfile', default=DB_FILE, help='File with scraped domains')
-@click.option('-a', '--all-emails', is_flag=True, help='Send email with all scraped domains instead of only new emails')
-def send(dbfile, all_emails):
-    """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
-    try:
-        # TODO: 'domains_subscribers' should be validated with regex
-        # as comma separated valid email addresses
-        subscribers = os.environ['DOMAINS_SUBSCRIBERS']
-    except KeyError:
-        print("DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting...")
-        return
-    mailer = GmailMailer(dbfile, subscribers)
-    mailer.send_email(all_emails=all_emails)
-
-@cli.command()
-def clean():
-    """For testing purposes: remove DB_FILE, rename ARCHIVE_DIR to INPUT_DIR"""
-    if not os.path.isdir(INPUT_DIR):
-        os.mkdir(INPUT_DIR)
-
-    if os.path.isdir(ARCHIVE_DIR):
-        file_names = os.listdir(ARCHIVE_DIR)
-        for filename in file_names:
-            filepath = os.path.join(ARCHIVE_DIR, filename)
-            # remove timestamps
-            original_filename = filename.rsplit(sep='_', maxsplit=1)[0]
-            original_filepath = os.path.join(INPUT_DIR, original_filename)
-            shutil.move(filepath, original_filepath)
-    if os.path.isfile(DB_FILE):
-        os.unlink(DB_FILE)
-
-@cli.command()
-@click.option('-i', '--input-dir', default=INPUT_DIR, help='Input directory to read emails')
-@click.option('-a', '--archive-dir', default=ARCHIVE_DIR, help='Archive directory to move emails')
-@click.option('-f', '--dbfile', default=DB_FILE, help='File to save scraped domains')
-def scrape_and_send(input_dir, archive_dir, dbfile):
-    """Default command: Scrape domains and send email with summary"""
-    scrape.callback(input_dir, archive_dir, dbfile)
-    send.callback(dbfile, False)
-
-
 if __name__ == '__main__':
-    cli()
+    sys.exit(main())
