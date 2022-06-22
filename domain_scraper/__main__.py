@@ -21,7 +21,7 @@ DB_FILE = os.environ.get('DB_FILE', 'db/email_database.json')
 logger = logging.getLogger(__name__)
 
 
-def main():
+def parse_arguments():
     """Parse arguments from command line"""
     parser = argparse.ArgumentParser("Scrape domains from emails and send summary email")
     parser.add_argument('-e', '--email', help="Path to single email to scrape")
@@ -33,6 +33,8 @@ def main():
         help="Archive directory to move emails")
     parser.add_argument('-f', '--force', action='store_true', default=False,
         help="Force sending email with all scraped domains instead of only new emails")
+    parser.add_argument('-l', '--logging-level', default='DEBUG',
+        help="Set logging level", choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'])
     subparsers = parser.add_subparsers()
 
     scrape_parser = subparsers.add_parser('scrape')
@@ -47,11 +49,7 @@ def main():
     clean_parser = subparsers.add_parser('clean')
     clean_parser.set_defaults(func=clean)
 
-    args = parser.parse_args()
-    if not hasattr(args, 'func'):
-        args.func = scrape_and_send
-
-    return args.func(args)
+    return parser.parse_args()
 
 def scrape(args):
     """Scrape domains from emails from input_dir and print them"""
@@ -109,16 +107,25 @@ def read_emails_from_dir(input_dir, archive_dir):
 
         # read and parse email
         email_path = os.path.join(input_dir, email_filename)
-        with open(email_path, 'rb', encoding='utf-8') as file:
+        with open(email_path, 'rb') as file:
             emails_list.append(parser.parse(file))
 
         # move parsed email to ARCHIVE_DIR
         # timestamp added to avoid OSError during renaming
-        new_email_name = f"{email_filename}_{str(int(time()))}"
+        new_email_name = email_filename + '_{}'.format(int(time()))
         new_email_path = os.path.join(archive_dir, new_email_name)
         shutil.move(email_path, new_email_path)
     return emails_list
 
+def main():
+    """Configure logging, parse arguments and invoke proper function"""
+
+    args = parse_arguments()
+    if not hasattr(args, 'func'):
+        args.func = scrape_and_send
+
+    logging.basicConfig(level=args.logging_level)
+    return args.func(args)
 
 if __name__ == '__main__':
     sys.exit(main())

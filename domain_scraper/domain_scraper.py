@@ -7,7 +7,6 @@ import re
 
 from collections import defaultdict
 
-
 logger = logging.getLogger(__name__)
 
 class DomainScraper:

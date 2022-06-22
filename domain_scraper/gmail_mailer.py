@@ -75,7 +75,7 @@ class GmailMailer:
         self.msg['From'] = self.sender
         self.msg['To'] = self.subscribers
         today = date.today().strftime('%B %d, %Y')
-        self.msg['Subject'] = f'Domain Scraper update for {today}'
+        self.msg['Subject'] = 'Domain Scraper update for {}'.format(today)
 
         html_template_resource = pkg_resources.resource_filename(__name__, 'templates/summary.html')
         with open(html_template_resource, encoding='utf-8') as file:
