@@ -1,14 +1,16 @@
 """Argument parser for domain-scraper module"""
 
-import argparse
 import logging
 import os
 import shutil
 import sys
-
+from argparse import ArgumentParser
+from argparse import Namespace
+from time import time
+from typing import Optional
+from email.message import Message
 from email.parser import BytesHeaderParser
 from email.policy import default
-from time import time
 
 from .gmail_mailer import GmailMailer
 from .domain_scraper import DomainScraper
@@ -21,9 +23,9 @@ DB_FILE = os.environ.get("DB_FILE", "db/email_database.json")
 logger = logging.getLogger(__name__)
 
 
-def parse_arguments():
+def parse_arguments() -> Namespace:
     """Parse arguments from command line"""
-    parser = argparse.ArgumentParser(
+    parser = ArgumentParser(
         "Scrape domains from emails and send summary email"
     )
     parser.add_argument("-e", "--email", help="Path to single email to scrape")
@@ -70,7 +72,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def scrape(args):
+def scrape(args: Namespace) -> None:
     """Scrape domains from emails from input_dir and print them"""
     emails = read_emails_from_dir(args.input_dir, args.archive_dir)
     scraper = DomainScraper()
@@ -78,7 +80,7 @@ def scrape(args):
     scraper.save(args.dbfile)
 
 
-def send(args):
+def send(args: Namespace) -> Optional[int]:
     """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
     try:
         subscribers = os.environ["DOMAINS_SUBSCRIBERS"]
@@ -86,18 +88,19 @@ def send(args):
         logger.error(
             "DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting..."
         )
-        return
+        return 1
     mailer = GmailMailer(args.dbfile, subscribers)
     mailer.send_email(all_emails=args.force)
+    return 0
 
 
-def scrape_and_send(args):
+def scrape_and_send(args: Namespace) -> Optional[int|None]:
     """Default command: Scrape domains and send email with summary"""
     scrape(args)
-    send(args)
+    return send(args)
 
 
-def clean(args):
+def clean(args: Namespace) -> None:
     """
     For testing purposes.
     Remove dbfile, move content from archive_dir to input_dir.
@@ -118,9 +121,9 @@ def clean(args):
             shutil.move(filepath, original_filepath)
 
 
-def read_emails_from_dir(input_dir, archive_dir):
+def read_emails_from_dir(input_dir: str, archive_dir: str) -> list[Message]:
     """Parse emails from input_dir, move them to archive_dir"""
-    emails_list = []
+    emails_list: list[Message] = []
     if not os.path.isdir(input_dir):
         logger.warning("INPUT_DIR (%s) does not exist!", input_dir)
         return emails_list  # empty list
@@ -133,7 +136,8 @@ def read_emails_from_dir(input_dir, archive_dir):
         # read and parse email
         email_path = os.path.join(input_dir, email_filename)
         with open(email_path, "rb") as file:
-            emails_list.append(parser.parse(file))
+            email: Message = parser.parse(file)
+            emails_list.append(email)
 
         # move parsed email to ARCHIVE_DIR
         # timestamp added to avoid OSError during renaming
@@ -143,7 +147,7 @@ def read_emails_from_dir(input_dir, archive_dir):
     return emails_list
 
 
-def main():
+def main() -> Optional[int|None]:
     """Configure logging, parse arguments and invoke proper function"""
 
     args = parse_arguments()

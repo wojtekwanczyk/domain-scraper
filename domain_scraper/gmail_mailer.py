@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class GmailMailer:
     """Prepares and sends email with scraped domains to DOMAINS_SUBSCRIBERS"""
 
-    def __init__(self, dbfile, subscribers):
+    def __init__(self, dbfile: str, subscribers: str) -> None:
         self.host = "smtp.gmail.com"
         self.port = 465
         self.dbfile = dbfile
@@ -33,10 +33,10 @@ class GmailMailer:
             logger.error(
                 "Please set missing env variable for script to work: %s", str(err)
             )
-        self.emails_to_send = None
-        self.msg = None
+        self.emails_to_send: dict
+        self.msg: MIMEMultipart
 
-    def read_emails_to_send(self, all_emails=False):
+    def read_emails_to_send(self, all_emails: bool=False) -> None:
         """
         Reads emails from dbfile and
         filters out only not sent messages (if 'all_emails' is set to False)
@@ -57,12 +57,12 @@ class GmailMailer:
             }
         logger.debug("messages to send:\n%s", pformat(self.emails_to_send))
 
-    def update_sent_emails(self):
+    def update_sent_emails(self) -> None:
         """Updates sent emails in dbfile to avoid sending duplicated emails (same Message-ID)"""
         with open(self.dbfile, "r", encoding="utf-8") as file:
             dbfile_dict = json.load(file)
 
-        unique_new_msgids = set(self.emails_to_send.keys())
+        unique_new_msgids: set[str] = set(self.emails_to_send.keys())
         if "sent_emails" in dbfile_dict:
             unique_old_msgids = set(dbfile_dict["sent_emails"])
             merged_msgids = unique_old_msgids.union(unique_new_msgids)
@@ -73,7 +73,7 @@ class GmailMailer:
         with open(self.dbfile, "w", encoding="utf-8") as file:
             json.dump(dbfile_dict, file, indent=2)
 
-    def prepare_msg(self):
+    def prepare_msg(self) -> None:
         """Prepare MIMEMultipart message"""
         self.msg = MIMEMultipart("alternative")
         self.msg["From"] = self.sender
@@ -92,7 +92,7 @@ class GmailMailer:
         self.msg.attach(part1)
         self.msg.attach(part2)
 
-    def send_email(self, all_emails=False):
+    def send_email(self, all_emails: bool=False) -> bool:
         """
         Send email to DOMAINS_SUBSCRIBERS
         Returns False if dbfile is missing or no new domains are scraped
