@@ -8,8 +8,8 @@ from collections import defaultdict
 class DomainScraper:
     def __init__(self):
         separators = 'from|by|via|with|id|for|;'
-        self.from_regex = re.compile(f'from\s+(.+?)\s+({separators})')
-        self.by_regex = re.compile(f'by\s+(.+?)\s+({separators})')
+        self.regex_from = re.compile(f'from\s+(.+?)\s+({separators})')
+        self.regex_by = re.compile(f'by\s+(.+?)\s+({separators})')
         self.domains = dict()
 
     def scrape_from_emails(self, emails):
@@ -22,9 +22,9 @@ class DomainScraper:
         received_headers = email.get_all('Received')
         email_domains = set() # use set to avoid duplicates
         for received_header in received_headers:
-            if domain := self.from_regex.search(received_header):
+            if domain := self.regex_from.search(received_header):
                 email_domains.add(domain.group(1))
-            if domain := self.by_regex.search(received_header):
+            if domain := self.regex_by.search(received_header):
                 email_domains.add(domain.group(1))
         message_id = email['Message-ID'].strip('\t<>')
         return {message_id: list(email_domains)}
