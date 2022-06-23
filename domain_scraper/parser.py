@@ -1,5 +1,6 @@
 """Argument parser for domain-scraper module"""
 
+from email.message import Message
 import logging
 import os
 import shutil
@@ -10,7 +11,7 @@ from typing import Optional
 from .config import DEVELOPMENT as CONFIG
 from .gmail_mailer import GmailMailer
 from .domain_scraper import DomainScraper
-from .read_emails import read_emails_from_dir
+from .email_parser import EmailParser
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,11 @@ def parse_arguments() -> Namespace:
 
     scrape_parser = subparsers.add_parser("scrape")
     scrape_parser.set_defaults(func=scrape)
+    scrape_parser.add_argument(
+        "-e",
+        "--email",
+        help="Path to single email to scrape; with this option, input-dir is ignored",
+    )
 
     send_parser = subparsers.add_parser("send")
     send_parser.set_defaults(func=send)
@@ -70,8 +76,14 @@ def parse_arguments() -> Namespace:
 
 
 def scrape(args: Namespace) -> None:
-    """Scrape domains from emails from input_dir and print them"""
-    emails = read_emails_from_dir(args.input_dir, args.archive_dir)
+    """Scrape domains from emails and save them to dbfile"""
+    email_parser = EmailParser(args.archive_dir)
+    if args.email:
+        logger.debug("Scraping from single file: %s", args.email)
+        emails = [email_parser.parse_email(args.email)]
+    else:
+        logger.debug("Scraping from input dir: %s", args.input_dir)
+        emails = email_parser.parse_emails_from_dir(args.input_dir)
     scraper = DomainScraper()
     scraper.scrape_from_emails(emails)
     scraper.save(args.dbfile)

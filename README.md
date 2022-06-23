@@ -30,6 +30,7 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
         "${image_name}" domain-scraper scrape
 
 ## minikube deployment
+    eval $(minikube docker-env) # to add image to minikube docker repo
     minikube mount $HOME:/hosthome # run in separate terminal
 
     kubectl apply -f secrets.yaml # prepare secrets.yaml file with GMAIL_APP_USERNAME, GMAIL_APP_PASSWORD and DOMAINS_SUBSCRIBERS defined
@@ -50,7 +51,7 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
  - [x] add docstrings
  - [x] add types declarations
  - [x] add logging and remove all prints
- - [ ] add option to parse only one email
+ - [x] add option to parse only one email
  - [ ] create helm chart from the repo
  - [ ] add coverage measurement
  - [ ] write unit tests
