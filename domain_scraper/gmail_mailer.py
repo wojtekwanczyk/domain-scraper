@@ -36,7 +36,7 @@ class GmailMailer:
         self.emails_to_send: dict
         self.msg: MIMEMultipart
 
-    def read_emails_to_send(self, all_emails: bool=False) -> None:
+    def read_emails_to_send(self, all_emails: bool = False) -> None:
         """
         Reads emails from dbfile and
         filters out only not sent messages (if 'all_emails' is set to False)
@@ -92,7 +92,7 @@ class GmailMailer:
         self.msg.attach(part1)
         self.msg.attach(part2)
 
-    def send_email(self, all_emails: bool=False) -> bool:
+    def send_email(self, all_emails: bool = False) -> bool:
         """
         Send email to DOMAINS_SUBSCRIBERS
         Returns False if dbfile is missing or no new domains are scraped
