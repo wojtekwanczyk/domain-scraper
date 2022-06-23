@@ -47,12 +47,13 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
  - [x] configure persistent volume to store db
  - [x] add kubernetes yaml, verify the deployment
  - [x] do some refactoring, especially variable naming (msg, messages_to_send)
+ - [x] add docstrings
+ - [x] add types declarations
+ - [x] add logging and remove all prints
+ - [ ] add option to parse only one email
  - [ ] create helm chart from the repo
- - [ ] add logging and remove all prints
  - [ ] add coverage measurement
  - [ ] write unit tests
- - [ ] add docstrings
- - [ ] add types declarations
  - [ ] evaluate domain parsing - separate ipv4/ipv6 parsing from domains
  - [ ] add exception handling when file in INPUT_DIR is not email file or does not contain Received header
  - [ ] add validation for input files, to check if they are actually emails
