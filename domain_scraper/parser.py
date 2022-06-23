@@ -1,6 +1,5 @@
 """Argument parser for domain-scraper module"""
 
-from email.message import Message
 import logging
 import os
 import shutil
@@ -60,7 +59,8 @@ def parse_arguments() -> Namespace:
     scrape_parser.add_argument(
         "-e",
         "--email",
-        help="Path to single email to scrape; with this option, input-dir is ignored",
+        help="Path to single email to scrape; with this option,"
+        "input-dir is ignored and scraped domains are printed to stdout",
     )
 
     send_parser = subparsers.add_parser("send")
@@ -84,9 +84,14 @@ def scrape(args: Namespace) -> None:
     else:
         logger.debug("Scraping from input dir: %s", args.input_dir)
         emails = email_parser.parse_emails_from_dir(args.input_dir)
+
     scraper = DomainScraper()
     scraper.scrape_from_emails(emails)
     scraper.save(args.dbfile)
+
+    if args.email:
+        domains_list = next(iter(scraper.domains.values()))
+        print("\n".join(domains_list))
 
 
 def send(args: Namespace) -> Optional[int]:
