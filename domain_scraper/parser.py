@@ -46,18 +46,11 @@ def parse_arguments() -> Namespace:
         help="Print scraped domains to stdout",
     )
     parser.add_argument(
-        "-f",
-        "--force",
-        action="store_true",
-        default=False,
-        help="Force sending email with all scraped domains instead of only new emails",
-    )
-    parser.add_argument(
         "-S",
         "--send-email",
         action="store_true",
         default=False,
-        help="Force sending email with all scraped domains instead of only new emails",
+        help="Send email to DOMAINS_SUBSCRIBERS with scraped domains",
     )
     parser.add_argument(
         "-l",
@@ -69,7 +62,7 @@ def parse_arguments() -> Namespace:
     parser.add_argument(
         "-e",
         "--email",
-        help="Path to only one email to scrape; with this option,"
+        help="Path to only one email to scrape; with this option, "
         "input-dir is ignored",
     )
     parser.add_argument(

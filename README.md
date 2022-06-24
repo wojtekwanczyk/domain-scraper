@@ -6,16 +6,7 @@
  - GMAIL_APP_PASSWORD - gmail password
 
 ## Usage
-Usage: domain-scraper [OPTIONS] COMMAND [ARGS]...
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  clean            For testing purposes: remove DB_FILE, rename...
-  scrape           Scrape domains from emails from input_dir and print them
-  scrape-and-send  Default command: Scrape domains and send email with...
-  send             Read domains from file and send email with update to...
+See how to use this tool with domain-scraper -h
 
 ## Using docker image
 Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run command or use env.list file with --env-file flag, e.g.
@@ -27,7 +18,7 @@ Remember to add variables GMAIL_APP_USERNAME & GMAIL_APP_PASSWORD to docker run 
         --mount type=bind,source=${PWD}/emails,target=${app_path}/emails \
         --volume db:${app_path}/db:rw \
         -e GMAIL_APP_USERNAME -e GMAIL_APP_PASSWORD -e DOMAINS_SUBSCRIBERS \
-        "${image_name}" domain-scraper scrape
+        "${image_name}" domain-scraper -ps
 
 ## minikube deployment
     eval $(minikube docker-env) # to add image to minikube docker repo
