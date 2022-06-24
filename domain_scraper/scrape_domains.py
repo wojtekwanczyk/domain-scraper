@@ -21,7 +21,8 @@ import pkg_resources
 from jinja2 import Template
 
 
-from domain_scraper import parse_arguments
+from .config import DEVELOPMENT as CONFIG
+from .parser import parse_arguments
 
 logger = logging.getLogger(__name__)
 
@@ -115,10 +116,10 @@ def save_to_file(data: list[MessageDomains], file: str) -> None:
         json.dump(dbfile_dict, file_handle, indent=2)
 
 
-def prepare_msg(data: list[MessageDomains], subscribers: str) -> Message:
+def prepare_msg(data: list[MessageDomains], sendee: str) -> Message:
     """Prepare MIMEMultipart message"""
     msg = MIMEMultipart("alternative")
-    msg["To"] = subscribers
+    msg["To"] = sendee
     today = date.today().strftime("%B %d, %Y")
     msg["Subject"] = f"Domain Scraper update for {today}"
 
@@ -136,21 +137,29 @@ def prepare_msg(data: list[MessageDomains], subscribers: str) -> Message:
     return msg
 
 
-def send_email(data: list[MessageDomains], subscribers: str) -> None:
-    """Sends data to subscribers"""
-    host = "smtp.gmail.com"
-    port = 465
-    sender = os.environ["GMAIL_APP_USERNAME"]
-    password = os.environ["GMAIL_APP_PASSWORD"]
+def send_email(data: list[MessageDomains]) -> int:
+    """Sends data to DOMAINS_SUBSCRIBERS"""
+    try:
+        subscribers = os.environ["DOMAINS_SUBSCRIBERS"]
+        sender = os.environ["GMAIL_APP_USERNAME"]
+        password = os.environ["GMAIL_APP_PASSWORD"]
+    except KeyError as err:
+        logger.error(
+            "Please set required environmental variable to send email: %s", err
+        )
+        return 1
 
     msg = prepare_msg(data, subscribers)
 
     logger.info("Sending email to %s", subscribers)
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(host, port, context=context) as server:
+    with smtplib.SMTP_SSL(
+        CONFIG["EMAIL_HOST"], CONFIG["EMAIL_PORT"], context=context
+    ) as server:
         server.login(sender, password)
         server.send_message(msg)
     logger.info("Email sent.")
+    return 0
 
 
 def clean(args: Namespace) -> None:
@@ -185,7 +194,6 @@ def main() -> int:
 
     if args.clean:
         clean(args)
-        return 0
 
     if args.email:
         logger.debug("Scraping from single file: %s", args.email)
@@ -202,14 +210,7 @@ def main() -> int:
             print("\n".join(map(str, data)))
 
         if args.send_email:
-            try:
-                subscribers = os.environ["DOMAINS_SUBSCRIBERS"]
-            except KeyError:
-                logger.error(
-                    "DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting..."
-                )
-                return 1
-            send_email(data, subscribers)
+            return send_email(data)
     else:
         logger.warning("No new messages")
 
