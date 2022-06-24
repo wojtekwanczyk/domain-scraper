@@ -5,16 +5,23 @@ import json
 import logging
 import os
 import shutil
+import ssl
+import smtplib
 import re
 import sys
-
 from argparse import Namespace
 from collections import defaultdict
+from datetime import date
 from email.message import Message
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from time import time
 
-from domain_scraper import parse_arguments
+import pkg_resources
+from jinja2 import Template
 
+
+from domain_scraper import parse_arguments
 
 logger = logging.getLogger(__name__)
 
@@ -104,9 +111,42 @@ def save_to_file(data: list[MessageDomains], file: str) -> None:
         json.dump(dbfile_dict, file_handle, indent=2)
 
 
+def prepare_msg(data: list[MessageDomains], subscribers: str) -> Message:
+    """Prepare MIMEMultipart message"""
+    msg = MIMEMultipart("alternative")
+    msg["To"] = subscribers
+    today = date.today().strftime("%B %d, %Y")
+    msg["Subject"] = f"Domain Scraper update for {today}"
+
+    html_template_resource = pkg_resources.resource_filename(
+        __name__, "templates/summary.html"
+    )
+    with open(html_template_resource, encoding="utf-8") as file:
+        html_template = Template(file.read())
+    html_body = html_template.render(messages=data)
+    part1 = MIMEText("\n".join(map(str, data)), "plain")
+    part2 = MIMEText(html_body, "html")
+    msg.attach(part1)
+    msg.attach(part2)
+
+    return msg
+
+
 def send_email(data: list[MessageDomains], subscribers: str) -> None:
     """Sends data to subscribers"""
-    pass
+    host = "smtp.gmail.com"
+    port = 465
+    sender = os.environ["GMAIL_APP_USERNAME"]
+    password = os.environ["GMAIL_APP_PASSWORD"]
+
+    msg = prepare_msg(data, subscribers)
+
+    logger.info("Sending email to %s", subscribers)
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=context) as server:
+        server.login(sender, password)
+        server.send_message(msg)
+    logger.info("Email sent.")
 
 
 def clean(args: Namespace) -> None:
@@ -153,18 +193,18 @@ def main() -> int:
             save_to_file(data, args.dbfile)
         else:
             print("\n".join(map(str, data)))
+
+        if args.send_email:
+            try:
+                subscribers = os.environ["DOMAINS_SUBSCRIBERS"]
+            except KeyError:
+                logger.error(
+                    "DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting..."
+                )
+                return 1
+            send_email(data, subscribers)
     else:
         logger.warning("No new messages")
-
-    if args.send_email:
-        try:
-            subscribers = os.environ["DOMAINS_SUBSCRIBERS"]
-        except KeyError:
-            logger.error(
-                "DOMAINS_SUBSCRIBERS variable is not set, cannot send summary; exiting..."
-            )
-            return 1
-        send_email(data, subscribers)
 
     return 0
 

@@ -17,16 +17,16 @@
             </tbody>
         </table>
     </td>
-    {% for msgid, domain_list in domains.items() %}
+    {% for msg in messages %}
     <td valign="top">
         <table>
             <thead>
                 <th>
-                    <tr><b> {{ msgid }} </b></tr>
+                    <tr><b> {{ msg.msgid }} </b></tr>
                 </th>
             </thead>
             <tbody>
-                {% for domain in domain_list %}
+                {% for domain in msg.domains %}
                 <tr>
                     <td> {{ domain }} </td>
                 </tr>
