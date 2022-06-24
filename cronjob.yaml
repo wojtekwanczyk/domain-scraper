@@ -11,7 +11,7 @@ spec:
           containers:
           - name: domain-scarper
             image: domain-scraper
-            command: [ "domain-scraper" ]
+            command: [ "domain-scraper", "-sS" ]
             # paths defined below are relative to mounted emails-volume
             env:
               - name: INPUT_DIR

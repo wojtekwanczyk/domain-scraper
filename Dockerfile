@@ -7,5 +7,3 @@ COPY . .
 
 RUN pip install -r requirements.txt && \
     pip install .
-
-# CMD ["domain-scraper"]
