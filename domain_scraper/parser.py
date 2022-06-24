@@ -1,13 +1,10 @@
 """Argument parser for domain-scraper module"""
 
 import logging
-import os
 from argparse import ArgumentParser
 from argparse import Namespace
-from typing import Optional
 
 from .config import DEVELOPMENT as CONFIG
-from .gmail_mailer import GmailMailer
 
 
 logger = logging.getLogger(__name__)
@@ -78,11 +75,3 @@ def parse_arguments() -> Namespace:
     )
 
     return parser.parse_args()
-
-
-def send(args: Namespace) -> Optional[int]:
-    """Read domains from file and send email with update to DOMAIN_SUBSCRIBERS"""
-    subscribers = os.environ["DOMAINS_SUBSCRIBERS"]
-    mailer = GmailMailer(args.dbfile, subscribers)
-    mailer.send_email(all_emails=args.force)
-    return 0
