@@ -55,7 +55,7 @@ def parse_arguments() -> Namespace:
     parser.add_argument(
         "-l",
         "--logging-level",
-        default="DEBUG",
+        default=CONFIG["LOG_LEVEL"],
         help="Set logging level",
         choices=["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"],
     )
