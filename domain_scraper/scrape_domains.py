@@ -52,7 +52,7 @@ class MessageDomains:
 def make_sure_dirname_exists(file: str) -> None:
     """Make sure base directory from file exists to avoid exception"""
     dirname = os.path.dirname(file)
-    if not os.path.exists(dirname):
+    if dirname and not os.path.exists(dirname):
         logger.debug(
             "Parent directory for %s does not exists, creating %s", file, dirname
         )
@@ -61,14 +61,19 @@ def make_sure_dirname_exists(file: str) -> None:
 
 def is_input_correct(args: Namespace) -> bool:
     """Assures that required directories and files from args exist"""
-    make_sure_dirname_exists(args.dbfile)
-    if not os.path.isdir(args.archive_dir):
-        os.mkdir(args.archive_dir)
-    if not os.path.isdir(args.input_dir):
-        logger.warning("INPUT_DIR (%s) does not exist!", args.input_dir)
-    if args.email and not os.path.isfile(args.email):
-        logger.error("Email file does not exist: %s", args.email)
-        return False
+    if args.save_to_file:
+        make_sure_dirname_exists(args.dbfile)
+    if args.email:
+        if not os.path.isfile(args.email):
+            logger.error("Email file does not exist: %s", args.email)
+            return False
+    else:
+        if not os.path.isdir(args.archive_dir):
+            os.mkdir(args.archive_dir)
+        if not os.path.isdir(args.input_dir):
+            logger.error("INPUT_DIR (%s) does not exist!", args.input_dir)
+            return False
+
     return True
 
 
@@ -77,28 +82,19 @@ def parse_emails(input_dir: str, archive_dir: str) -> list[MessageDomains]:
     result = []
     for email_name in os.listdir(input_dir):
         email_file = os.path.join(input_dir, email_name)
-        msg = read_and_archive_email(email_file, archive_dir)
+        with open(email_file, "rb") as file:
+            msg = email.message_from_binary_file(file)
+        archive_email(email_file, archive_dir)
         result.append(MessageDomains(msg))
     return result
 
 
-def parse_email(email_file: str, archive_dir: str) -> MessageDomains:
-    """Parses single email and move it to archive_dir"""
-    msg = read_and_archive_email(email_file, archive_dir)
-    return MessageDomains(msg)
-
-
-def read_and_archive_email(email_file: str, archive_dir: str) -> Message:
-    """Read email from filesystem and move it to archive_dir"""
-    with open(email_file, "rb") as file:
-        msg = email.message_from_binary_file(file)
-
+def archive_email(email_file: str, archive_dir: str) -> None:
+    """Move email to archive_dir"""
     email_name = os.path.basename(email_file)
     new_email_name = email_name + "_{}".format(int(time()))
     new_email_file = os.path.join(archive_dir, new_email_name)
     shutil.move(email_file, new_email_file)
-
-    return msg
 
 
 def save_to_file(data: list[MessageDomains], file: str) -> None:
@@ -110,8 +106,9 @@ def save_to_file(data: list[MessageDomains], file: str) -> None:
         dbfile_dict = defaultdict(dict)
 
     for msg in data:
-        dbfile_dict["messages"][msg.msgid] = msg.domains
+        dbfile_dict["messages"].update({msg.msgid: msg.domains})
 
+    logger.debug("Saving result to file: %s", file)
     with open(file, "w", encoding="utf-8") as file_handle:
         json.dump(dbfile_dict, file_handle, indent=2)
 
@@ -119,9 +116,9 @@ def save_to_file(data: list[MessageDomains], file: str) -> None:
 def prepare_msg(data: list[MessageDomains], sendee: str) -> Message:
     """Prepare MIMEMultipart message"""
     msg = MIMEMultipart("alternative")
-    msg["To"] = sendee
     today = date.today().strftime("%B %d, %Y")
     msg["Subject"] = f"Domain Scraper update for {today}"
+    msg["To"] = sendee
 
     html_template_resource = pkg_resources.resource_filename(
         __name__, "templates/summary.html"
@@ -184,7 +181,7 @@ def clean(args: Namespace) -> None:
 
 
 def main() -> int:
-    """Configure logging, parse arguments and invoke proper function"""
+    """Configure logging, parse arguments and invoke proper functions"""
 
     args = parse_arguments()
     logging.basicConfig(level=args.logging_level)
@@ -194,10 +191,13 @@ def main() -> int:
 
     if args.clean:
         clean(args)
+        return 0
 
     if args.email:
         logger.debug("Scraping from single file: %s", args.email)
-        data = [parse_email(args.email, args.archive_dir)]
+        with open(args.email, "rb") as file:
+            msg = email.message_from_binary_file(file)
+        data = [MessageDomains(msg)]
     else:
         logger.debug("Scraping from input dir: %s", args.input_dir)
         data = parse_emails(args.input_dir, args.archive_dir)
