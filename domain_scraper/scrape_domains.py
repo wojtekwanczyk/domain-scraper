@@ -58,13 +58,17 @@ def make_sure_dirname_exists(file: str) -> None:
         os.makedirs(dirname)
 
 
-def check_dirs_from_args(args: Namespace) -> None:
-    """Assures that required directories from args exist"""
+def is_input_correct(args: Namespace) -> bool:
+    """Assures that required directories and files from args exist"""
     make_sure_dirname_exists(args.dbfile)
     if not os.path.isdir(args.archive_dir):
         os.mkdir(args.archive_dir)
     if not os.path.isdir(args.input_dir):
         logger.warning("INPUT_DIR (%s) does not exist!", args.input_dir)
+    if args.email and not os.path.isfile(args.email):
+        logger.error("Email file does not exist: %s", args.email)
+        return False
+    return True
 
 
 def parse_emails(input_dir: str, archive_dir: str) -> list[MessageDomains]:
@@ -175,7 +179,9 @@ def main() -> int:
 
     args = parse_arguments()
     logging.basicConfig(level=args.logging_level)
-    check_dirs_from_args(args)
+
+    if not is_input_correct(args):
+        return 1
 
     if args.clean:
         clean(args)
@@ -191,7 +197,8 @@ def main() -> int:
     if data:
         if args.save_to_file:
             save_to_file(data, args.dbfile)
-        else:
+
+        if args.print:
             print("\n".join(map(str, data)))
 
         if args.send_email:
