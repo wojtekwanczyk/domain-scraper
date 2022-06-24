@@ -36,7 +36,14 @@ def parse_arguments() -> Namespace:
         "--save-to-file",
         action="store_true",
         default=False,
-        help="Save scraped domains to dbfile instead of printing to stdout",
+        help="Save scraped domains to dbfile",
+    )
+    parser.add_argument(
+        "-p",
+        "--print",
+        action="store_true",
+        default=False,
+        help="Print scraped domains to stdout",
     )
     parser.add_argument(
         "-f",
