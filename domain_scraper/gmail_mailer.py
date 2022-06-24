@@ -48,11 +48,11 @@ class GmailMailer:
 
         sent_emails = dbfile_dict.get("sent_emails", [])
         if not sent_emails or all_emails:
-            self.emails_to_send = dbfile_dict["domains"]
+            self.emails_to_send = dbfile_dict["messages"]
         else:
             self.emails_to_send = {
                 msg: domains
-                for msg, domains in dbfile_dict["domains"].items()
+                for msg, domains in dbfile_dict["messages"].items()
                 if msg not in sent_emails
             }
         logger.debug("messages to send:\n%s", pformat(self.emails_to_send))
