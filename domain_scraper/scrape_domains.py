@@ -1,56 +1,64 @@
-"""Argument parser for domain-scraper module"""
+"""Script for scraping domains from Received headers of email Messages."""
 
+import argparse
+import collections
+import datetime
 import email
 import json
 import logging
 import os
-import shutil
-import ssl
-import smtplib
 import re
+import shutil
+import smtplib
+import ssl
 import sys
-from argparse import Namespace
-from collections import defaultdict
-from datetime import date
+import time
+
 from email.message import Message
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from time import time
 
+import jinja2
 import pkg_resources
-from jinja2 import Template
 
-
-from .config import DEVELOPMENT as CONFIG
-from .parser import parse_arguments
+from domain_scraper import config
+from domain_scraper.parser import parse_arguments
 
 logger = logging.getLogger(__name__)
+REGEX_FROM = re.compile(r"from\s+(.+?)\s+(by|via|with|id|for|;)")
+REGEX_BY = re.compile(r"by\s+(.+?)\s+(from|via|with|id|for|;)")
+CONFIG = config.DEVELOPMENT
 
 
 class MessageDomains:
-    """Represents scraped domains from regular email Message object"""
 
-    REGEX_FROM = re.compile(r"from\s+(.+?)\s+(by|via|with|id|for|;)")
-    REGEX_BY = re.compile(r"by\s+(.+?)\s+(from|via|with|id|for|;)")
+    """Represents scraped domains from regular email Message object.
+
+    This class uses global variables:
+        - REGEX_FROM
+        - REGEX_BY
+    """
 
     def __init__(self, msg: Message):
-        self.msgid = msg["Message-ID"].strip("\t\n<>")
+        """Scrapes all domains from "Received" headers of msg object."""
+        self.msgid = msg.get('Message-ID')
         received_headers = msg.get_all("Received")
         domains_set = set()  # use set to avoid duplicates
         for received_header in received_headers:
-            if domain := self.REGEX_FROM.search(received_header):
+            if domain := REGEX_FROM.search(received_header):
                 domains_set.add(domain.group(1))
-            if domain := self.REGEX_BY.search(received_header):
+            if domain := REGEX_BY.search(received_header):
                 domains_set.add(domain.group(1))
         self.domains = list(domains_set)
 
     def __str__(self) -> str:
+        """Returns str representation of MessageDomains."""
         domains_str = "\n\t".join(self.domains)
-        return f"MsgID {self.msgid}:\n\t{domains_str}"
+        return "MsgID {}:\n\t{}".format(self.msgid, domains_str)
 
 
-def make_sure_dirname_exists(file: str) -> None:
-    """Make sure base directory from file exists to avoid exception"""
+def make_parent_dir(file: str) -> None:
+    """Create file's parent directory if it does not exist."""
     dirname = os.path.dirname(file)
     if dirname and not os.path.exists(dirname):
         logger.debug(
@@ -59,26 +67,31 @@ def make_sure_dirname_exists(file: str) -> None:
         os.makedirs(dirname)
 
 
-def is_input_correct(args: Namespace) -> bool:
-    """Assures that required directories and files from args exist"""
+def is_input_correct(args: argparse.Namespace) -> bool:
+    """Assures that required directories and files from args exist."""
     if args.save_to_file:
-        make_sure_dirname_exists(args.dbfile)
+        make_parent_dir(args.dbfile)
+
     if args.email:
         if not os.path.isfile(args.email):
             logger.error("Email file does not exist: %s", args.email)
             return False
     else:
         if not os.path.isdir(args.archive_dir):
-            os.mkdir(args.archive_dir)
+            os.makedirs(args.archive_dir)
         if not os.path.isdir(args.input_dir):
             logger.error("INPUT_DIR (%s) does not exist!", args.input_dir)
             return False
+
+    if args.send_email and not all(CONFIG.values()):
+        logger.error("Please set required environmental variables to send email")
+        return False
 
     return True
 
 
 def parse_emails(input_dir: str, archive_dir: str) -> list[MessageDomains]:
-    """Parses emails from input_dir and moves them to archive_dir"""
+    """Parses emails from input_dir and moves them to archive_dir."""
     result = []
     for email_name in os.listdir(input_dir):
         email_file = os.path.join(input_dir, email_name)
@@ -90,41 +103,44 @@ def parse_emails(input_dir: str, archive_dir: str) -> list[MessageDomains]:
 
 
 def archive_email(email_file: str, archive_dir: str) -> None:
-    """Move email to archive_dir"""
+    """Move email to archive_dir."""
     email_name = os.path.basename(email_file)
-    new_email_name = email_name + "_{}".format(int(time()))
+    new_email_name = email_name + "_{}".format(int(time.time()))
     new_email_file = os.path.join(archive_dir, new_email_name)
     shutil.move(email_file, new_email_file)
 
 
-def save_to_file(data: list[MessageDomains], file: str) -> None:
-    """Save scraped domains to dbfile"""
+def append_to_dbfile(data: list[MessageDomains], file: str) -> None:
+    """Append scraped domains to dbfile.
+
+    If file does not exist, it will be created.
+    """
     try:
-        with open(file, "r", encoding="utf-8") as file_handle:
+        with open(file, "r") as file_handle:
             dbfile_dict = json.load(file_handle)
     except FileNotFoundError:
-        dbfile_dict = defaultdict(dict)
+        dbfile_dict = collections.defaultdict(dict)
 
     for msg in data:
         dbfile_dict["messages"].update({msg.msgid: msg.domains})
 
     logger.debug("Saving result to file: %s", file)
-    with open(file, "w", encoding="utf-8") as file_handle:
+    with open(file, "w") as file_handle:
         json.dump(dbfile_dict, file_handle, indent=2)
 
 
-def prepare_msg(data: list[MessageDomains], sendee: str) -> Message:
-    """Prepare MIMEMultipart message"""
+def prepare_msg(data: list[MessageDomains]) -> Message:
+    """Prepare MIMEMultipart message."""
     msg = MIMEMultipart("alternative")
-    today = date.today().strftime("%B %d, %Y")
+    today = datetime.date.today().strftime("%B %d, %Y")
     msg["Subject"] = f"Domain Scraper update for {today}"
-    msg["To"] = sendee
+    msg["To"] = CONFIG['DOMAINS_SUBSCRIBERS']
 
     html_template_resource = pkg_resources.resource_filename(
         __name__, "templates/summary.html"
     )
-    with open(html_template_resource, encoding="utf-8") as file:
-        html_template = Template(file.read())
+    with open(html_template_resource) as file:
+        html_template = jinja2.Template(file.read())
     html_body = html_template.render(messages=data)
     part1 = MIMEText("\n".join(map(str, data)), "plain")
     part2 = MIMEText(html_body, "html")
@@ -135,34 +151,23 @@ def prepare_msg(data: list[MessageDomains], sendee: str) -> Message:
 
 
 def send_email(data: list[MessageDomains]) -> int:
-    """Sends data to DOMAINS_SUBSCRIBERS"""
-    try:
-        subscribers = os.environ["DOMAINS_SUBSCRIBERS"]
-        sender = os.environ["GMAIL_APP_USERNAME"]
-        password = os.environ["GMAIL_APP_PASSWORD"]
-    except KeyError as err:
-        logger.error(
-            "Please set required environmental variable to send email: %s", err
-        )
-        return 1
-
-    msg = prepare_msg(data, subscribers)
-
-    logger.info("Sending email to %s", subscribers)
+    """Sends data to DOMAINS_SUBSCRIBERS."""
+    msg = prepare_msg(data)
+    logger.info("Sending email to %s", CONFIG['DOMAINS_SUBSCRIBERS'])
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL(
-        CONFIG["EMAIL_HOST"], CONFIG["EMAIL_PORT"], context=context
+        CONFIG['EMAIL_HOST'], CONFIG['EMAIL_PORT'], context=context
     ) as server:
-        server.login(sender, password)
+        server.login(CONFIG['GMAIL_APP_USERNAME'], CONFIG['GMAIL_APP_PASSWORD'])
         server.send_message(msg)
     logger.info("Email sent.")
     return 0
 
 
-def clean(args: Namespace) -> None:
-    """
-    For testing purposes.
-    Remove dbfile, move content from archive_dir to input_dir.
+def clean(args: argparse.Namespace) -> None:
+    """Remove dbfile, move content from archive_dir to input_dir.
+
+    Only for testing purposes.
     """
     if os.path.isfile(args.dbfile):
         os.unlink(args.dbfile)
@@ -181,7 +186,7 @@ def clean(args: Namespace) -> None:
 
 
 def main() -> int:
-    """Configure logging, parse arguments and invoke proper functions"""
+    """Configure logging, parse arguments and invoke proper functions."""
 
     args = parse_arguments()
     logging.basicConfig(level=args.logging_level)
@@ -204,13 +209,13 @@ def main() -> int:
 
     if data:
         if args.save_to_file:
-            save_to_file(data, args.dbfile)
+            append_to_dbfile(data, args.dbfile)
 
         if args.print:
             print("\n".join(map(str, data)))
 
         if args.send_email:
-            return send_email(data)
+            send_email(data)
     else:
         logger.warning("No new messages")
 

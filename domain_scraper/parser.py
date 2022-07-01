@@ -1,18 +1,19 @@
-"""Argument parser for domain-scraper module"""
+"""Argument parser for domain-scraper module."""
 
+import argparse
 import logging
-from argparse import ArgumentParser
-from argparse import Namespace
 
-from .config import DEVELOPMENT as CONFIG
+from domain_scraper.config import DEVELOPMENT as CONFIG
 
 
 logger = logging.getLogger(__name__)
 
 
-def parse_arguments() -> Namespace:
-    """Parse arguments from command line"""
-    parser = ArgumentParser("Scrape domains from emails and send summary email")
+def parse_arguments() -> argparse.Namespace:
+    """Parse arguments from command line."""
+    parser = argparse.ArgumentParser(
+        "Scrape domains from emails and send summary email"
+    )
     parser.add_argument(
         "-d",
         "--dbfile",
